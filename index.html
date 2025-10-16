@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BaintComputer AIOPs — Developer Dashboard (Prototype)</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Simple styling (white & blue theme) -->
+<style>
+  :root{
+    --bg:#ffffff; --card:#f6fbff; --accent:#1f7ed8; --muted:#6b7785; --glass:rgba(31,126,216,0.06);
+    --success:#16a34a; --danger:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#0b1320}
+  header{display:flex;gap:16px;align-items:center;padding:18px 28px;border-bottom:1px solid #e6eef9}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#6cc4ff);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+  .title{font-size:18px;font-weight:700}
+  .header-right{margin-left:auto;display:flex;gap:12px;align-items:center}
+  main{display:grid;grid-template-columns:300px 1fr;gap:20px;padding:20px}
+  /* left nav */
+  nav.card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(10,20,40,0.04)}
+  nav a{display:block;padding:10px;border-radius:8px;color:var(--accent);text-decoration:none;margin:6px 0;font-weight:600}
+  nav a:hover{background:var(--glass)}
+  /* right content */
+  .workspace{display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(10,20,40,0.04)}
+  .row{display:flex;gap:12px}
+  .half{flex:1}
+  label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+  input,select,textarea,button{font-family:inherit}
+  input[type=text], input[type=email], select, textarea{
+    width:100%;padding:10px;border-radius:8px;border:1px solid #e1eefc;background:white
+  }
+  button{background:var(--accent);color:white;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
+  button.secondary{background:transparent;color:var(--accent);border:1px solid var(--glass)}
+  .muted{color:var(--muted);font-size:13px}
+  .keys-list{display:flex;flex-direction:column;gap:8px}
+  .key-row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:white;border:1px solid #eaf6ff}
+  .small{font-size:13px;color:var(--muted)}
+  pre{background:#e8f6ff;padding:10px;border-radius:8px;overflow:auto}
+  .assistant{position:fixed;right:24px;bottom:24px;width:320px;max-width:calc(100% - 48px);z-index:60}
+  .assistant .bubble{background:linear-gradient(180deg,#ffffff,#f2fbff);border-radius:12px;padding:12px;border:1px solid #e6f4ff;box-shadow:0 10px 30px rgba(20,40,80,0.06)}
+  .assistant .header{display:flex;align-items:center;gap:8px}
+  .assistant .name{font-weight:700;color:var(--accent)}
+  .assistant .msg{margin-top:8px;color:#0b1320}
+  .toggle-assistant{position:fixed;right:24px;bottom:340px;background:var(--accent);color:white;border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 12px 30px rgba(31,126,216,0.2)}
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:13px}
+  /* responsive */
+  @media (max-width:900px){ main{grid-template-columns:1fr;padding:12px} .assistant{right:12px;bottom:90px} .toggle-assistant{right:12px;bottom:160px} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">B</div>
+    <div>
+      <div class="title">BaintComputer <span style="font-weight:500">AIOPs</span></div>
+      <div class="small">Developer Dashboard (Prototype)</div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="small">Signed in as <strong id="userEmail">demo@baint.ai</strong></div>
+    <button id="signOutBtn" class="secondary">Sign out</button>
+  </div>
+</header>
+
+<main>
+  <!-- left nav -->
+  <nav class="card">
+    <a href="#docs" onclick="show('docs')">API Docs</a>
+    <a href="#keys" onclick="show('keys')">API Keys</a>
+    <a href="#tester" onclick="show('tester')">Command Tester</a>
+    <a href="#analytics" onclick="show('analytics')">Analytics</a>
+    <a href="#chat" onclick="show('chat')">Dev Chat</a>
+    <a href="#pricing" onclick="show('pricing')">Pricing & Plans</a>
+    <div style="height:12px"></div>
+    <div class="small">Quick actions</div>
+    <button style="margin-top:8px" onclick="createDemoKey()">Create Demo Key</button>
+  </nav>
+
+  <!-- workspace -->
+  <section class="workspace">
+    <!-- API Docs -->
+    <div id="docs" class="card">
+      <h3>API Documentation (Overview)</h3>
+      <p class="muted">Use the endpoints below to connect apps to BaintComputer AIOPs. This prototype simulates behavior locally.</p>
+      <div class="row" style="margin-top:10px">
+        <div class="half">
+          <label>POST /api/v1/command</label>
+          <pre>{
+  "api_key":"YOUR_KEY",
+  "command":"scroll down",
+  "context": {"app":"twitter","userId":"u_123"}
+}</pre>
+          <div class="small">Response: { success: true, action: "scrollDown" }</div>
+        </div>
+        <div class="half">
+          <label>POST /api/v1/train</label>
+          <pre>{
+  "api_key":"YOUR_KEY",
+  "phrase":"scroll a bit",
+  "action":"scrollDown"
+}</pre>
+          <div class="small">Used to teach the AIOPs new phrase mappings.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Keys -->
+    <div id="keys" class="card" style="display:none">
+      <h3>API Keys</h3>
+      <p class="muted">Generate and revoke keys for developers. (This prototype stores keys in browser localStorage.)</p>
+
+      <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+        <input type="text" id="keyName" placeholder="Key label (e.g. dev-laptop)" />
+        <button onclick="generateKey()">Generate Key</button>
+      </div>
+
+      <div style="margin-top:12px" class="keys-list" id="keysList"></div>
+      <div class="small" style="margin-top:12px">Tip: treat keys like passwords. In production, keys are created server-side and stored hashed.</div>
+    </div>
+
+    <!-- Tester -->
+    <div id="tester" class="card" style="display:none">
+      <h3>Command Tester</h3>
+      <p class="muted">Send commands using a key or test via built-in voice (browser). Responses are simulated.</p>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="testKeySelect"></select>
+        <input type="text" id="commandInput" placeholder="Type command (e.g. scroll down)" />
+        <button onclick="callCommand()">Send</button>
+        <button onclick="startVoiceTest()">🎙 Voice Test</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <label>Response</label>
+        <pre id="testerResponse">No response yet.</pre>
+      </div>
+    </div>
+
+    <!-- Analytics -->
+    <div id="analytics" class="card" style="display:none">
+      <h3>Analytics</h3>
+      <p class="muted">Live usage graph (requests / day) and success rate</p>
+      <canvas id="requestsChart" height="120"></canvas>
+      <div style="display:flex;gap:12px;margin-top:12px">
+        <div class="card" style="flex:1">
+          <div class="small">Total Requests</div>
+          <div style="font-size:24px" id="totalReq">0</div>
+        </div>
+        <div class="card" style="flex:1">
+          <div class="small">Success Rate</div>
+          <div style="font-size:24px" id="successRate">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dev Chat -->
+    <div id="chat" class="card" style="display:none">
+      <h3>Developer Chat (placeholder)</h3>
+      <p class="muted">This is a mock chat area for developer notes and feedback. Integrate with a Slack or Matrix channel in production.</p>
+      <div style="display:flex;gap:8px">
+        <textarea id="chatText" placeholder="Write a note or developer message..." style="flex:1;height:120px"></textarea>
+        <div style="width:220px">
+          <div style="margin-bottom:8px"><strong>Recent notes</strong></div>
+          <div id="notesList" class="small"></div>
+        </div>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button onclick="saveNote()">Save Note</button>
+        <button class="secondary" onclick="clearNotes()">Clear Notes</button>
+      </div>
+    </div>
+
+    <!-- Pricing -->
+    <div id="pricing" class="card" style="display:none">
+      <h3>Pricing & Plans</h3>
+      <p class="muted">Suggested tiers for developer access.</p>
+      <div style="display:flex;gap:12px;margin-top:12px">
+        <div class="card" style="flex:1">
+          <div class="small">Free</div>
+          <div style="font-size:18px">0 USD / month</div>
+          <div class="small">500 requests / mo</div>
+          <div style="margin-top:8px"><button>Choose</button></div>
+        </div>
+        <div class="card" style="flex:1">
+          <div class="small">Pro</div>
+          <div style="font-size:18px">15 USD / month</div>
+          <div class="small">10k requests / mo</div>
+          <div style="margin-top:8px"><button>Choose</button></div>
+        </div>
+        <div class="card" style="flex:1">
+          <div class="small">Business</div>
+          <div style="font-size:18px">99 USD / month</div>
+          <div class="small">Unlimited (priority)</div>
+          <div style="margin-top:8px"><button>Contact sales</button></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- Assistant -->
+<div class="assistant" id="assistant" style="display:none">
+  <div class="bubble">
+    <div class="header">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6cc4ff);display:flex;align-items:center;justify-content:center;color:white;font-weight:700">A</div>
+      <div>
+        <div class="name">AIOPs Assist</div>
+        <div class="small">Helpful tips & quick actions</div>
+      </div>
+    </div>
+    <div class="msg" id="assistMsg">Welcome — try “Create Demo Key” to generate an API key or go to Command Tester to try voice commands.</div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <button onclick="assistCreateKey()">Create key</button>
+      <button class="secondary" onclick="assistShow('tester')">Open Tester</button>
+    </div>
+  </div>
+</div>
+
+<div class="toggle-assistant" title="Toggle assistant" id="toggleAssist">?</div>
+
+<footer>Prototype — not production. Keys are simulated locally. Built for demo and investor pitch.</footer>
+
+<script>
+/* ---------- Simple in-browser prototype logic ---------- */
+
+/* UI routing */
+function show(id){
+  document.querySelectorAll('section.card, #docs, #keys, #tester, #analytics, #chat, #pricing').forEach(el=>{
+    if (el.id) el.style.display = (el.id===id ? 'block' : 'none');
+  });
+  // ensure docs shows by default if id not found
+  const visible = document.querySelector(`#${id}`);
+  if (!visible) document.getElementById('docs').style.display='block';
+}
+
+/* keys simulation */
+const KEY_STORAGE = 'aiops_demo_keys_v1';
+function loadKeys(){
+  const raw = localStorage.getItem(KEY_STORAGE);
+  return raw ? JSON.parse(raw) : [];
+}
+function saveKeys(list){
+  localStorage.setItem(KEY_STORAGE, JSON.stringify(list));
+  refreshKeysUI();
+}
+function generateKey(){
+  const label = document.getElementById('keyName').value || ('key-'+(Math.random().toString(36).slice(2,8)));
+  const key = 'bc-'+Math.random().toString(36).slice(2,16);
+  const lista = loadKeys();
+  lista.push({label, key, created: new Date().toISOString()});
+  saveKeys(lista);
+  document.getElementById('keyName').value='';
+}
+function createDemoKey(){ generateKey(); alert('Demo key created'); }
+
+function revokeKey(k){
+  let list = loadKeys().filter(x=>x.key!==k);
+  saveKeys(list);
+}
+
+/* UI refresh */
+function refreshKeysUI(){
+  const list = loadKeys();
+  const container = document.getElementById('keysList');
+  container.innerHTML = '';
+  const select = document.getElementById('testKeySelect');
+  select.innerHTML = '';
+  list.forEach(item=>{
+    const row = document.createElement('div'); row.className='key-row';
+    row.innerHTML = `<div><strong>${item.label}</strong><div class="small">${item.key}</div></div>`;
+    const btns = document.createElement('div');
+    btns.innerHTML = `<button onclick="copyKey('${item.key}')">Copy</button> <button class="secondary" onclick="revokeKey('${item.key}')">Revoke</button>`;
+    row.appendChild(btns);
+    container.appendChild(row);
+
+    const opt = document.createElement('option'); opt.value=item.key; opt.textContent=item.label + ' — ' + item.key.slice(0,8);
+    select.appendChild(opt);
+  });
+  if (list.length===0) {
+    container.innerHTML = '<div class="small">No keys yet. Create one to test API calls.</div>';
+    select.innerHTML = '<option value="">(no key)</option>';
+  }
+}
+
+/* helper copy */
+function copyKey(k){ navigator.clipboard.writeText(k).then(()=>alert('Copied key')) }
+
+/* Tester: simulate command call */
+let totalRequests=0, successful=0;
+function callCommand(){
+  const key = document.getElementById('testKeySelect').value;
+  const cmd = document.getElementById('commandInput').value.trim();
+  if (!cmd) return alert('Type a command');
+  document.getElementById('testerResponse').textContent = 'Sending...';
+  setTimeout(()=>{
+    totalRequests++;
+    // simple success/fail heuristic
+    const success = Math.random() > 0.08; // 92% success
+    if (success){ successful++; document.getElementById('testerResponse').textContent = JSON.stringify({success:true, action: 'simulated', executed: cmd}, null, 2); }
+    else { document.getElementById('testerResponse').textContent = JSON.stringify({success:false, error:'rate_limited'}, null, 2); }
+    updateAnalytics();
+  }, 600);
+}
+
+/* Voice tester using Web Speech */
+let testerRec;
+function startVoiceTest(){
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) return alert('Use Chrome for voice');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  testerRec = new SR();
+  testerRec.continuous=false; testerRec.interimResults=false; testerRec.lang='en-US';
+  testerRec.onresult = (e)=>{
+    const t = e.results[0][0].transcript;
+    document.getElementById('commandInput').value = t;
+    callCommand();
+  };
+  testerRec.start();
+}
+
+/* analytics chart */
+const ctx = document.getElementById('requestsChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type:'line',
+  data:{ labels: ['Day-6','Day-5','Day-4','Day-3','Day-2','Day-1','Today'], datasets:[{label:'Requests/day',data:[5,12,8,18,22,30,0],borderColor: 'rgba(31,126,216,0.95)',backgroundColor:'rgba(31,126,216,0.12)', tension:0.3}]},
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+});
+function updateAnalytics(){
+  document.getElementById('totalReq').textContent = totalRequests;
+  const rate = totalRequests ? Math.round((successful/totalRequests)*100) : 0;
+  document.getElementById('successRate').textContent = rate+'%';
+  // bump today's point
+  const lastIx = chart.data.datasets[0].data.length-1;
+  chart.data.datasets[0].data[lastIx] = (chart.data.datasets[0].data[lastIx]||0) + 1;
+  chart.update();
+}
+
+/* notes (dev chat) */
+function saveNote(){
+  const t = document.getElementById('chatText').value.trim();
+  if (!t) return alert('Write a note');
+  const notes = JSON.parse(localStorage.getItem('aiops_notes_v1')||'[]');
+  notes.unshift({text:t,ts:new Date().toISOString()});
+  localStorage.setItem('aiops_notes_v1', JSON.stringify(notes));
+  renderNotes();
+  document.getElementById('chatText').value='';
+}
+function renderNotes(){
+  const list = JSON.parse(localStorage.getItem('aiops_notes_v1')||'[]');
+  const out = document.getElementById('notesList');
+  out.innerHTML = list.slice(0,8).map(n=>`<div style="margin-bottom:8px"><strong class="small">${new Date(n.ts).toLocaleString()}</strong><div class="small">${n.text}</div></div>`).join('');
+}
+function clearNotes(){ localStorage.removeItem('aiops_notes_v1'); renderNotes(); }
+
+/* assistant controls */
+const assistEl = document.getElementById('assistant');
+document.getElementById('toggleAssist').addEventListener('click', ()=>{
+  assistEl.style.display = assistEl.style.display==='none' ? 'block' : 'none';
+});
+function assistCreateKey(){ createDemoKey(); refreshKeysUI(); document.getElementById('assistMsg').textContent='Created a demo key. Use Command Tester to try it.'; }
+
+/* sign out mock */
+document.getElementById('signOutBtn').addEventListener('click', ()=>{ if(confirm('Sign out?')) alert('Signed out (demo)'); });
+
+/* boot */
+refreshKeysUI(); renderNotes(); show('docs'); updateAnalytics();
+</script>
+
+</body>
+</html>
